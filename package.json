@@ -1,0 +1,16 @@
+{
+  "name": "ai-image-prompt-saver",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Chrome/Edge extension: save AI-generated images with prompt metadata embedded",
+  "scripts": {
+    "build": "node build.mjs",
+    "test:metadata": "esbuild scripts/test-metadata.ts --bundle --platform=node --format=cjs --outfile=scripts/.test-metadata.cjs && node scripts/.test-metadata.cjs"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.280",
+    "@types/node": "^26.6.3",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.0"
+  }
+}

@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>AI 图片元数据查看器</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --border: #d8dee6;
+        --muted: #667085;
+        --accent: #2563eb;
+        --bg: #f7f8fa;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font: 14px/1.6 system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: var(--bg);
+        color: #1d2939;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: #fff;
+        border-bottom: 1px solid var(--border);
+      }
+      header button,
+      header label {
+        padding: 6px 14px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: #fff;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      header button:hover,
+      header label:hover { border-color: var(--accent); color: var(--accent); }
+      #drop-hint { color: var(--muted); }
+      #file-name { margin-left: auto; color: var(--muted); max-width: 40%; overflow-wrap: anywhere; }
+      main {
+        display: flex;
+        gap: 16px;
+        padding: 16px;
+        align-items: flex-start;
+      }
+      #preview-wrap {
+        flex: 1 1 auto;
+        min-width: 0;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        text-align: center;
+      }
+      #preview {
+        max-width: 100%;
+        max-height: calc(100vh - 120px);
+        border-radius: 8px;
+      }
+      #preview-wrap .placeholder { color: var(--muted); padding: 60px 0; }
+      #panel {
+        flex: 0 0 400px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px;
+      }
+      .card h3 { margin: 0 0 8px; font-size: 13px; color: var(--muted); font-weight: 600; }
+      #prompt-text {
+        font-weight: 600;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        word-break: normal;
+      }
+      #copy-btn {
+        margin-top: 10px;
+        padding: 5px 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: #fff;
+        cursor: pointer;
+      }
+      #copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+      .kv { display: grid; grid-template-columns: 80px 1fr; gap: 6px 10px; }
+      .kv dt { color: var(--muted); }
+      .kv dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+      }
+      .actions { display: flex; gap: 10px; }
+      .actions button {
+        flex: 1;
+        padding: 6px 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: #fff;
+        cursor: pointer;
+      }
+      .actions button:hover { border-color: var(--accent); color: var(--accent); }
+      #raw-json {
+        display: none;
+        margin: 0;
+        padding: 10px;
+        background: #0f172a;
+        color: #e2e8f0;
+        border-radius: 8px;
+        font-size: 12px;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        max-height: 300px;
+        overflow-y: auto;
+      }
+      #prompt-extract { margin-top: 12px; }
+      #prompt-extract h3 { margin: 0 0 6px; font-size: 13px; color: var(--muted); font-weight: 600; }
+      #prompt-box {
+        width: 100%;
+        min-height: 96px;
+        resize: vertical;
+        padding: 8px 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font: 14px/1.6 system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      #prompt-box:focus { outline: none; border-color: var(--accent); }
+      #copy-box-btn {
+        margin-top: 8px;
+        width: 100%;
+        padding: 7px 0;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: #fff;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      #copy-box-btn:hover { border-color: var(--accent); color: var(--accent); }
+      #meta-empty,
+      #meta-found,
+      #meta-unsupported { display: none; }
+      body.dragging #drop-hint { color: var(--accent); font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <label for="file-input">📂 打开图片</label>
+      <input id="file-input" type="file" accept="image/*" hidden />
+      <span id="drop-hint">拖拽图片到本页任意位置</span>
+      <span id="file-name"></span>
+    </header>
+    <main>
+      <section id="preview-wrap">
+        <img id="preview" alt="" style="display: none" />
+        <div class="placeholder" id="placeholder">尚未选择图片</div>
+      </section>
+      <aside id="panel">
+        <div class="card" id="meta-empty">
+          <h3>提示词</h3>
+          <p>这张图片没有找到元数据。</p>
+        </div>
+        <div class="card" id="meta-unsupported">
+          <h3>提示词</h3>
+          <p>不支持的文件格式（仅支持 JPEG / PNG）。</p>
+        </div>
+        <div class="card" id="meta-found">
+          <h3>提示词</h3>
+          <div id="prompt-text"></div>
+          <button id="copy-btn">复制提示词</button>
+        </div>
+        <div class="card" id="meta-info">
+          <h3>生成信息</h3>
+          <dl class="kv">
+            <dt>模型</dt><dd id="model-val">—</dd>
+            <dt>尺寸</dt><dd id="size-val">—</dd>
+            <dt>生成时间</dt><dd id="time-val">—</dd>
+            <dt>来源</dt><dd id="source-val">—</dd>
+          </dl>
+        </div>
+        <div class="card" id="meta-actions">
+          <div class="actions">
+            <button id="raw-toggle">显示原始 JSON</button>
+            <button id="strip-btn">删除元数据</button>
+          </div>
+          <pre id="raw-json"></pre>
+          <div id="prompt-extract">
+            <h3>提示词纯文本（可编辑后复制）</h3>
+            <textarea id="prompt-box" spellcheck="false"></textarea>
+            <button id="copy-box-btn">📋 一键复制提示词</button>
+          </div>
+        </div>
+      </aside>
+    </main>
+    <script src="viewer.js"></script>
+  </body>
+</html>

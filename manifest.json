@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "AI Image Prompt Saver",
+  "version": "0.1.0",
+  "description": "保存 AI 生成图片时自动把提示词等溯源信息写入图片元数据，兼容 ComfyUI / A1111（JPEG COM + EXIF UserComment / PNG iTXt）",
+  "permissions": ["downloads", "clipboardWrite"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "host_permissions": [
+    "https://*.baidu.com/*",
+    "https://gips3.baidu.com/*",
+    "https://gips2.baidu.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://wenxin.baidu.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
